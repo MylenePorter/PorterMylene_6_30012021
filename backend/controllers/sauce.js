@@ -1,23 +1,25 @@
-const fs = require('fs');
-const sauceModel = require('../models/sauce');
+const fs = require('fs'); // Donne accès aux fonctions du système de fichiers
+const sauceModel = require('../models/sauce'); // Accès modèle 'sauce'
 
+// Crée nouvelle sauce
 exports.addSauce = (req, res, next) => {
     const sauceObject = JSON.parse(req.body.sauce);
     const sauce = new sauceModel({
-        ...sauceObject,
-        imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`
+        ...sauceObject, // ... = spread : préserve l'intégrité hiérarchique
+        imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}` // Chemin d'accès pour l'image
     });
-    sauce.save()
+    sauce.save() // Enregistrement sauce
         .then(() => res.status(201).json({ message: 'La sauce a été créée !' }))
         .catch(error => res.status(400).json({ error }));
 };
 
+// Modifier sauce
 exports.modifySauce = (req, res, next) => {
-    const sauceObject = req.file ? {
-        ...JSON.parse(req.body.sauce),
-        imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`
-    } : {...req.body };
-    sauceModel.updateOne({ _id: req.params.id }, {
+    const sauceObject = req.file ? { // s'il y a un fichier (image)
+        ...JSON.parse(req.body.sauce), // récupère les informations du formulaire
+        imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}` // communique l'url de l'image
+    } : {...req.body }; // s'il n'y a pas de fichier (image), récupère les infos du formulaire
+    sauceModel.updateOne({ _id: req.params.id }, { // met à jour les informations de la sauce
             ...sauceObject,
             _id: req.params.id
         })
@@ -25,31 +27,35 @@ exports.modifySauce = (req, res, next) => {
         .catch(error => res.status(400).json({ error }));
 };
 
+// Trouver une sauce
 exports.getOneSauce = (req, res, next) => {
-    sauceModel.findOne({ _id: req.params.id })
-        .then(sauce => res.status(200).json(sauce))
-        .catch(error => res.status(404).json({ error }));
+    sauceModel.findOne({ _id: req.params.id }) // Va chercher une sauce grâce à son id
+        .then(sauce => res.status(200).json(sauce)) // Affiche la sauce trouvée
+        .catch(error => res.status(404).json({ error })); // Sinon affiche une erreur
 };
 
+// Afficher toutes les sauces
 exports.getAllSauces = (req, res, next) => {
-    sauceModel.find()
-        .then(sauces => res.status(200).json(sauces))
-        .catch(error => res.status(400).json({ error }));
+    sauceModel.find() // Va chercher toutes les sauces contenue dans la DB
+        .then(sauces => res.status(200).json(sauces)) // Affiche la liste
+        .catch(error => res.status(400).json({ error })); // Sinon affiche une erreur
 };
 
+// Supprimer une sauce
 exports.deleteSauce = (req, res, next) => {
-    sauceModel.findOne({ _id: req.params.id })
-        .then(sauce => {
-            const filename = sauce.imageUrl.split('/images/')[1];
-            fs.unlink(`images/${filename}`, () => {
-                sauceModel.deleteOne({ _id: req.params.id })
-                    .then(() => res.status(200).json({ message: 'La sauce a été supprimée !' }))
-                    .catch(error => res.status(400).json({ error }));
+    sauceModel.findOne({ _id: req.params.id }) // Va chercher une sauce grâce à son id
+        .then(sauce => { // quand trouve la sauce
+            const filename = sauce.imageUrl.split('/images/')[1]; // Va trouver l'image
+            fs.unlink(`images/${filename}`, () => { // Supprime l'image de la sauce et si succès continue 
+                sauceModel.deleteOne({ _id: req.params.id }) // Supprime la sauce de la DB
+                    .then(() => res.status(200).json({ message: 'La sauce a été supprimée !' })) // Message confirmation
+                    .catch(error => res.status(400).json({ error })); // Sinon affiche erreur
             });
         })
         .catch(error => res.status(501).json({ error }));
 };
 
+// Ajouter/enlever sauce des favoris
 exports.likeSauceStatus = (req, res, next) => {
     const userID = req.body.userId;
     const like = req.body.like;
