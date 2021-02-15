@@ -34,7 +34,7 @@ const userLogin = (req, res, next) => {
                             res.status(200).json({ // Requête ok, résultat généré dans objet avec userId + token au format json
                                 userId: user._id,
                                 // 3 paramètres 'sign' : user, encryption key, duration. 
-                                token: jwt.sign({ userId: user._id },
+                                token: jwt.sign({ userId: user._id }, // <-- TOKEN
                                     process.env.RANDOM_TOKEN_SECRET, { expiresIn: '24h' }
                                 )
                             });
